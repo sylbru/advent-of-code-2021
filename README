@@ -1,0 +1,4 @@
+Example compile command:
+
+    ghc --make 1.hs -outputdir build -o build/1 && ./build/1 < input
+
