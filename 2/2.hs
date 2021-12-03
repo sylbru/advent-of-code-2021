@@ -1,6 +1,7 @@
 data Position = Position
     { horizontal :: Int
     , depth :: Int
+    , aim :: Int
     }
 
 data Command
@@ -8,9 +9,9 @@ data Command
     | Down Int 
     | Up Int
 
-testInput :: [Command]
+testInput :: String
 testInput =
-    parseInput "forward 5\ndown 5\nforward 8\nup 3\ndown 8\nforward 2"
+    "forward 5\ndown 5\nforward 8\nup 3\ndown 8\nforward 2"
 
 parseInput :: String -> [Command]
 parseInput input =
@@ -22,10 +23,11 @@ parseInput input =
                 ["forward", val] -> Forward (read val)
                 ["down", val] -> Down (read val)
                 ["up", val] -> Up (read val)
+                _ -> Forward 0
 
 initial :: Position
 initial =
-    Position { horizontal = 0, depth = 0 }
+    Position { horizontal = 0, depth = 0, aim = 0 }
 
 position :: [Command] -> Position
 position commands =
@@ -34,9 +36,9 @@ position commands =
         interpret :: Position -> Command -> Position
         interpret pos command =
             case command of
-                Forward l -> pos { horizontal = horizontal pos + l }
-                Down l -> pos { depth = depth pos + l }
-                Up l -> pos { depth = depth pos - l }
+                Forward l -> pos { horizontal = horizontal pos + l, depth = depth pos + (aim pos * l) }
+                Down l -> pos { aim = aim pos + l }
+                Up l -> pos { aim = aim pos - l }
 
 result :: Position -> Int
 result position =
