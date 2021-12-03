@@ -10,13 +10,18 @@ data Command
 
 testInput :: [Command]
 testInput =
-    [ Forward 5 
-    , Down 5
-    , Forward 8
-    , Up 3
-    , Down 8
-    , Forward 2
-    ]
+    parseInput "forward 5\ndown 5\nforward 8\nup 3\ndown 8\nforward 2"
+
+parseInput :: String -> [Command]
+parseInput input =
+    map parseLine (lines input)
+    where
+        parseLine :: String -> Command
+        parseLine line =
+            case words line of
+                ["forward", val] -> Forward (read val)
+                ["down", val] -> Down (read val)
+                ["up", val] -> Up (read val)
 
 initial :: Position
 initial =
@@ -39,5 +44,5 @@ result position =
 
 main :: IO ()
 main = do
-    -- raw <- getContents
-    print . result . position $ testInput
+    raw <- getContents
+    print . result . position . parseInput $ raw
