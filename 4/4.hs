@@ -32,10 +32,6 @@ parseBoardCell =
     (\i -> (i, False)) . read
 
 
-drawNumber :: [Int] -> [Board] -> ([Int], [Board])
-drawNumber numbers boards =
-    ([],[])
-
 findWinningBoard :: ([Int], [Board]) -> (Int, Board)
 findWinningBoard ((number:rest), boards) =
     let
