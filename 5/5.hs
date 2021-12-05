@@ -1,3 +1,4 @@
+import qualified Data.List.Split as S
 import Data.List (transpose)
 
 type Point = (Int, Int)
@@ -7,8 +8,20 @@ testInput =
     "0,9 -> 5,9\n8,0 -> 0,8\n9,4 -> 3,4\n2,2 -> 2,1\n7,0 -> 7,4\n6,4 -> 2,0\n0,9 -> 2,9\n3,4 -> 1,4\n0,0 -> 8,8\n5,5 -> 8,2\n"
 
 parseInput :: String -> [(Point, Point)]
-parseInput input =
-    [((0,9), (5,9)), ((2,9),(4,9))]
+parseInput =
+    map parseLine . lines
+    where
+        parseLine :: String -> (Point, Point)
+        parseLine =
+            (\[start, end] -> (parsePoint start, parsePoint end)) . S.splitOn " -> "
+
+        parsePoint :: String -> Point
+        parsePoint =
+            listTo2Tuple . map read . S.splitOn "," 
+
+
+listTo2Tuple :: [a] -> (a, a)
+listTo2Tuple (a1:a2:_) = (a1, a2)
 
 dangerMap :: [(Point, Point)] -> [[Int]]
 dangerMap input =
@@ -35,7 +48,8 @@ addHorizontalLine x (start, end) acc =
             if i == x then
                 indexedMap
                     (\(j,c) ->
-                        if j >= start && j <= end then
+                        -- we assume start and end might be swapped
+                        if j >= start && j <= end || j >= end && j <= start then
                             c + 1
                         else
                             c
@@ -81,4 +95,4 @@ countDangerPoints =
 main :: IO ()
 main = do
     raw <- getContents
-    print . countDangerPoints . parseInput $ testInput
+    print . countDangerPoints . parseInput $ raw
