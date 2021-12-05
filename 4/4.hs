@@ -36,15 +36,36 @@ drawNumber :: [Int] -> [Board] -> ([Int], [Board])
 drawNumber numbers boards =
     ([],[])
 
-play :: ([Int], [Board]) -> (Int, Board)
-play ((number:rest), boards) =
+findWinningBoard :: ([Int], [Board]) -> (Int, Board)
+findWinningBoard ((number:rest), boards) =
     let
         newBoards = map (markNumber number) boards
     in
     case filter winning newBoards of
-        [] -> play (rest, newBoards)
+        [] -> findWinningBoard (rest, newBoards)
         [winningBoard] -> (number, winningBoard)
         -- severalWinningBoards -> ?
+
+
+lastWinningBoard :: ([Int], [Board]) -> (Int, Board)
+lastWinningBoard ((number:rest), boards) =
+    let
+        newBoards = map (markNumber number) boards
+    in
+    (case newBoards of
+        [remainingBoard] ->
+            if winning remainingBoard then
+                (number, remainingBoard)
+            else
+                lastWinningBoard (rest, newBoards)
+
+        severalRemainingBoards ->
+            lastWinningBoard (rest, filter (not . winning) newBoards)
+    )
+
+
+
+
 
 markNumber :: Int -> Board -> Board
 markNumber number board =
@@ -99,4 +120,5 @@ dropCondenseOnSublist delim =
 main :: IO ()
 main = do
     raw <- getContents
-    print . score . play . parseInput $ raw
+    -- print . score . findWinningBoard . parseInput $ raw
+    print . score . lastWinningBoard . parseInput $ raw
