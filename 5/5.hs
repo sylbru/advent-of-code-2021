@@ -25,20 +25,22 @@ listTo2Tuple (a1:a2:_) = (a1, a2)
 
 dangerMap :: [(Point, Point)] -> [[Int]]
 dangerMap input =
-    foldl addLine initialMap input
+    foldr addLine initialMap input
     where
         initialMap :: [[Int]]
         initialMap = 
             emptyMap (widthFrom input) (heightFrom input)
 
-addLine :: [[Int]] -> (Point, Point) -> [[Int]]
-addLine acc ((x1,y1), (x2,y2)) =
+addLine :: (Point, Point) -> [[Int]] -> [[Int]]
+addLine ((x1,y1), (x2,y2)) acc =
     if y1 == y2 then
         addHorizontalLine y1 (x1,x2) acc
     else if x1 == x2 then
         addVerticalLine x1 (y1,y2) acc
+    else if isDiagonal ((x1,y1), (x2,y2)) then
+        addDiagonalLine ((x1,y1), (x2,y2)) acc
     else
-        -- Diagonal line, ignore for now
+        -- Weird line, ignore
         acc
 
 addHorizontalLine :: Int -> (Int, Int) -> [[Int]] -> [[Int]]
@@ -62,8 +64,59 @@ addHorizontalLine x (start, end) acc =
 
 
 addVerticalLine :: Int -> (Int, Int) -> [[Int]] -> [[Int]]
-addVerticalLine y (start, end) =
-    transpose . (addHorizontalLine y (start, end)) . transpose
+addVerticalLine y (start, end) acc =
+    indexedMap
+        (\(i,l) ->
+            -- we assume start and end might be swapped
+            if i >= start && i <= end || i >= end && i <= start then
+                indexedMap
+                    (\(j,c) ->
+                        if j == y then
+                            c + 1
+                        else
+                            c
+                    )
+                    l
+            else
+                l
+        )
+        acc
+
+
+addDiagonalLine :: (Point, Point) -> [[Int]] -> [[Int]]
+addDiagonalLine (p1@(x1,y1), p2@(x2,y2)) m =
+    if p1 == p2 then
+        addPoint p1 m
+    else
+        let
+            newP1 =
+                (if x1 > x2 then x1 - 1 else x1 + 1
+                , if y1 > y2 then y1 - 1 else y1 + 1
+                )
+        in
+        addDiagonalLine (newP1, p2) (addPoint p1 m)
+
+isDiagonal :: (Point, Point) -> Bool
+isDiagonal ((x1,y1), (x2,y2)) =
+    abs (x2 - x1) == abs (y2 - y1)
+
+addPoint :: Point -> [[Int]] -> [[Int]]
+addPoint (x,y) m =
+    indexedMap
+        (\(i,l) ->
+            if i == y then
+                indexedMap
+                    (\(j,c) ->
+                        if j == x then
+                            c + 1
+                        else
+                            c
+                    )
+                    l
+            else
+                l
+        )
+        m
 
 indexedMap :: ((Int, a) -> b) -> [a] -> [b]
 indexedMap f l =
@@ -86,6 +139,20 @@ heightFrom :: [(Point, Point)] -> Int
 heightFrom =
     (1 +) . maximum . concat . map (\((_,y1) , (_,y2)) -> [y1, y2])
 
+printMap :: [[Int]] -> String
+printMap =
+    unlines . map printMapRow
+    where
+        printMapRow :: [Int] -> String
+        printMapRow =
+            concat . map printMapCell
+
+        printMapCell :: Int -> String
+        printMapCell c =
+            if c == 0 then
+                "."
+            else
+                show c
 
 countDangerPoints :: [(Point, Point)] -> Int
 countDangerPoints =
