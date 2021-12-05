@@ -30,22 +30,22 @@ epsilonRate =
 
 mostCommonValue :: [Bit] -> Bit
 mostCommonValue bits =
-    case partition ((==) One) bits of
-        (trues, falses) ->
-            if length trues > length falses then
-                One
-            else
-                Zero
+    if length ones > length zeroes then
+        One
+    else
+        Zero
+    where
+        (ones, zeroes) = partition (== One) bits
 
 
 leastCommonValue :: [Bit] -> Bit
 leastCommonValue bits =
-    case partition ((==) One) bits of
-        (trues, falses) ->
-            if length trues <= length falses then
-                One
-            else
-                Zero
+    if length ones <= length zeroes then
+        One
+    else
+        Zero
+    where
+        (ones, zeroes) = partition (== One) bits
     
 
 toDecimal :: [Bit] -> Int
@@ -55,11 +55,11 @@ toDecimal x =
         go :: Int -> Int -> [Bit] -> Int
         go col acc val =
             case val of
-                [] -> acc
                 One : xs -> go (col - 1) (acc + 2 ^ col) xs 
                 Zero : xs -> go (col - 1) acc xs 
+                [] -> acc
 
-
+powerConsumption :: [[Bit]] -> Int
 powerConsumption input = 
     gammaRate input * epsilonRate input
 
