@@ -76,6 +76,14 @@ optimizedAgesToList ages =
                 (_, remainder) ->
                     Just (remainder, (v - remainder) `div` 8)
 
+countFish :: OptimizedLanternfishAges -> Int
+countFish ages =
+    if ages <= 0 then
+        0
+    else
+        1 + (countFish $ ages `div` 8)
+
+
 main :: IO ()
 main = do
     raw <- getContents
