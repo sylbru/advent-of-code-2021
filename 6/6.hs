@@ -77,11 +77,15 @@ optimizedAgesToList ages =
                     Just (remainder, (v - remainder) `div` 8)
 
 countFish :: OptimizedLanternfishAges -> Int
-countFish ages =
-    if ages <= 0 then
-        0
-    else
-        1 + (countFish $ ages `div` 8)
+countFish optimizedAges =
+    go 0 optimizedAges
+    where
+        go :: Int -> OptimizedLanternfishAges -> Int
+        go acc ages =
+            if ages <= 0 then
+                acc
+            else
+                go (acc + 1) (ages `div` 8)
 
 
 main :: IO ()
