@@ -29,8 +29,8 @@ split delimiter string =
 
 parseInput :: String -> LanternfishAges
 parseInput =
-    reverse . map read . split ',' . trim
-
+    map read . split ',' . trim
+  
 nextDay :: LanternfishAges -> LanternfishAges
 nextDay ages =
     let
