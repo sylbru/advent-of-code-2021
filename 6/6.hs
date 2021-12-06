@@ -2,6 +2,7 @@ import Data.Char (isSpace)
 import Data.List (unfoldr)
 
 type LanternfishAges = [Int]
+type OptimizedLanternfishAges = Int
 
 testInput :: String
 testInput = "3,4,3,1,2\n"
@@ -30,6 +31,10 @@ split delimiter string =
 parseInput :: String -> LanternfishAges
 parseInput =
     map read . split ',' . trim
+
+parseInputOptimized :: String -> OptimizedLanternfishAges
+parseInputOptimized =
+    foldr (\acc i -> acc + 8 * i) 0 . reverse . parseInput
   
 nextDay :: LanternfishAges -> LanternfishAges
 nextDay ages =
@@ -37,6 +42,12 @@ nextDay ages =
         births = length . filter (== 0) $ ages
     in
     (replicate births 8) ++ (map nextDaySingle ages)
+
+nextDayOptimized :: OptimizedLanternfishAges -> OptimizedLanternfishAges
+nextDayOptimized ages =
+    -- TODO
+    -- nextDayOptimized 14538 = 9857
+    ages
 
 nextDaySingle :: Int -> Int
 nextDaySingle age =
@@ -51,6 +62,19 @@ atDay d ages =
         ages
     else
         atDay (d - 1) (nextDay ages)
+
+optimizedAgesToList :: OptimizedLanternfishAges -> [Int]
+optimizedAgesToList ages =
+    reverse (unfoldr f ages)
+    where
+        f :: Int -> Maybe (Int, Int)
+        f v =
+            case (v `div` 8, v `mod` 8) of
+                (0, 0) ->
+                    Nothing
+
+                (_, remainder) ->
+                    Just (remainder, (v - remainder) `div` 8)
 
 main :: IO ()
 main = do
