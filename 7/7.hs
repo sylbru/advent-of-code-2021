@@ -11,7 +11,9 @@ costOfPosition x crabs =
 
 costOfPositionForCrabAt :: Int -> Int -> Int
 costOfPositionForCrabAt x c =
-    abs (c - x)
+    (distance * (distance + 1)) `div` 2
+    where
+        distance = abs (c - x)
 
 costsPerPosition :: [Int] -> [Int]
 costsPerPosition crabs =
