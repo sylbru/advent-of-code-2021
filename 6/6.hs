@@ -44,10 +44,22 @@ nextDay ages =
     (replicate births 8) ++ (map nextDaySingle ages)
 
 nextDayOptimized :: OptimizedLanternfishAges -> OptimizedLanternfishAges
-nextDayOptimized ages =
-    -- TODO
+nextDayOptimized optimizedAges =
     -- nextDayOptimized 14538 = 9857
-    ages
+    -- nextDayOptimized 9857 = 41864 (pas forcément : l’ordre peut être différent, donc la représentation aussi)
+    -- countFish (nextDayOptimized 9857) == countFish 41864
+    go 0 optimizedAges
+    where
+        go col ages =
+            if ages == 0 then
+                0
+            else
+                if ages `mod` 8 > 0 then
+                    (go (col + 1) (ages `div` 8))
+                        + (8 ^ col) * (ages `mod` 8 - 1) 
+                else
+                    (go (col + 2) (ages `div` 8))
+                    -- + (6 et 8)
 
 nextDaySingle :: Int -> Int
 nextDaySingle age =
@@ -56,12 +68,12 @@ nextDaySingle age =
     else
         age - 1
 
-atDay :: Int -> LanternfishAges -> LanternfishAges
+atDay :: Int -> OptimizedLanternfishAges -> OptimizedLanternfishAges
 atDay d ages =
     if d <= 0 then
         ages
     else
-        atDay (d - 1) (nextDay ages)
+        atDay (d - 1) (nextDayOptimized ages)
 
 optimizedAgesToList :: OptimizedLanternfishAges -> [Int]
 optimizedAgesToList ages =
@@ -91,4 +103,4 @@ countFish optimizedAges =
 main :: IO ()
 main = do
     raw <- getContents
-    print . length . atDay 80 . parseInput $ raw
+    print . countFish . atDay 80 . parseInputOptimized $ testInput
