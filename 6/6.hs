@@ -38,6 +38,9 @@ nextDay ages_ =
     -- nextDay 14538 = 9857
     -- nextDay 9857 = 41864 (pas forcément : l’ordre peut être différent, donc la représentation aussi)
     -- countFish (nextDay 9857) == countFish 41864
+    -- au bout d’un moment, on perd le premier chiffre quand il passe à zéro :
+    -- on perd l’information que ce chiffre existe. Il faudrait donc plutôt utiliser des caractères hexa ?
+    -- ou plutôt ajouter un 1 au début qu’on enlève à la sortie ?
     go 0 ages_
     where
         go col ages =
