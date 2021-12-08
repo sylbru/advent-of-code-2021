@@ -1,5 +1,7 @@
 import Data.List (elem)
 import Data.List.Split (splitOn)
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 {-
 0: abcefg  (6)
@@ -15,8 +17,8 @@ import Data.List.Split (splitOn)
 -}
 
 data Digit = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9
-data Segment = A | B | C | D | E | F | G
-type DisplayedDigit = [Segment]
+data Segment = A | B | C | D | E | F | G deriving (Eq, Ord)
+type DisplayedDigit = Set Segment
 type Entry = ([DisplayedDigit], [DisplayedDigit])
 
 
@@ -32,12 +34,12 @@ parseEntry input =
     (parseDigits rawSignalPatterns, parseDigits rawOutputValue)
 
 parseDigits :: String -> [DisplayedDigit]
-parseDigits raw =
-    map parseDigit $ words raw
+parseDigits =
+    map parseDigit . words
 
 parseDigit :: String -> DisplayedDigit
-parseDigit word =
-    map parseSegment word
+parseDigit =
+    Set.fromList . map parseSegment
 
 parseSegment :: Char -> Segment
 parseSegment char =
@@ -66,21 +68,22 @@ isEasyDigit displayedDigit =
 
 easyDigitsLengths :: [Int]
 easyDigitsLengths =
-    (map (length . segmentsForDigit) [D1, D4, D7, D8])
+    (map (Set.size . segmentsForDigit) [D1, D4, D7, D8])
 
 segmentsForDigit :: Digit -> DisplayedDigit
 segmentsForDigit digit =
-    case digit of
-        D0 -> [A, B, C, E, F, G]
-        D1 -> [C, F]
-        D2 -> [A, C, D, E, G]
-        D3 -> [A, C, D, F, G]
-        D4 -> [B, C, D, F]
-        D5 -> [A, B, D, F, G]
-        D6 -> [A, B, D, E, F, G]
-        D7 -> [A, C, F]
-        D8 -> [A, B, C, D, E, F, G]
-        D9 -> [A, B, C, D, F, G]
+    Set.fromList $
+        case digit of
+            D0 -> [A, B, C, E, F, G]
+            D1 -> [C, F]
+            D2 -> [A, C, D, E, G]
+            D3 -> [A, C, D, F, G]
+            D4 -> [B, C, D, F]
+            D5 -> [A, B, D, F, G]
+            D6 -> [A, B, D, E, F, G]
+            D7 -> [A, C, F]
+            D8 -> [A, B, C, D, E, F, G]
+            D9 -> [A, B, C, D, F, G]
 
 main :: IO ()
 main = do
