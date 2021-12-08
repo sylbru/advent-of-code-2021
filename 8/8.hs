@@ -62,9 +62,11 @@ countEasyDigitsForEntry (_, outputValue) =
 
 isEasyDigit :: DisplayedDigit -> Bool
 isEasyDigit displayedDigit =
-    elem
-        (length displayedDigit)
-        (map (length . segmentsForDigit) [D1, D4, D7, D8])
+    elem (length displayedDigit) easyDigitsLengths
+
+easyDigitsLengths :: [Int]
+easyDigitsLengths =
+    (map (length . segmentsForDigit) [D1, D4, D7, D8])
 
 segmentsForDigit :: Digit -> DisplayedDigit
 segmentsForDigit digit =
