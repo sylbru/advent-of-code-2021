@@ -1,4 +1,6 @@
+import Data.Maybe (fromJust)
 import Data.List (elem)
+import Data.Foldable (find)
 import Data.List.Split (splitOn)
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -16,8 +18,8 @@ import qualified Data.Set as Set
 9: abcdfg  (6)
 -}
 
-data Digit = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9
-data Segment = A | B | C | D | E | F | G deriving (Eq, Ord)
+data Digit = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9 deriving (Show)
+data Segment = A | B | C | D | E | F | G deriving (Show, Eq, Ord)
 type DisplayedDigit = Set Segment
 type Entry = ([DisplayedDigit], [DisplayedDigit])
 
@@ -85,7 +87,98 @@ segmentsForDigit digit =
             D8 -> [A, B, C, D, E, F, G]
             D9 -> [A, B, C, D, F, G]
 
+type Mapping = [(Digit, DigitMapping)]
+type DigitMapping = [(Segment, Set Segment)]
+
+findMapping :: [DisplayedDigit] -> [(DisplayedDigit, Digit)]
+findMapping signalPatterns =
+    let
+        correctWireMapping = fromJust . find (isCorrectMapping signalPatterns) $ permutations allSegments
+    in
+    zip
+        (map ((corrupt correctWireMapping) . segmentsForDigit) allDigits)
+        allDigits
+
+isCorrectMapping :: [DisplayedDigit] -> [Segment] -> Bool
+isCorrectMapping signalPatterns mapping =
+    Set.fromList (map (decrypt mapping) signalPatterns)
+        == Set.fromList (map segmentsForDigit allDigits)
+
+decrypt :: [Segment] -> DisplayedDigit -> DisplayedDigit
+decrypt mapping wrongDigit =
+    let
+        mappingTuples = zip mapping [A,B,C,D,E,F,G]
+    in
+    Set.map (\s -> fromJust $ lookup s mappingTuples) wrongDigit
+
+corrupt :: [Segment] -> DisplayedDigit -> DisplayedDigit
+corrupt mapping digit =
+    let
+        mappingTuples = zip [A,B,C,D,E,F,G] mapping
+    in
+    Set.map (\s -> fromJust $ lookup s mappingTuples) digit
+
+findDigit1 :: [DisplayedDigit] -> DisplayedDigit
+findDigit1 signalPatterns =
+    head . filter (\d -> Set.size d == Set.size (segmentsForDigit D1)) $ signalPatterns
+
+
+allDigits :: [Digit]
+allDigits =
+    [D0, D1, D2, D3, D4, D5, D6, D7, D8, D9]
+
+allSegments :: Set Segment
+allSegments =
+    Set.fromList [A, B, C, D, E, F, G]
+
+digitsWithOneMoreSegment :: Digit -> [Digit]
+digitsWithOneMoreSegment digit =
+    filter
+        (\otherDigit -> Set.size (segmentsForDigit otherDigit) == Set.size (segmentsForDigit digit) + 1)
+        allDigits
+
+digitToString :: Digit -> String
+digitToString digit =
+    case digit of
+        D0 -> "0"
+        D1 -> "1"
+        D2 -> "2"
+        D3 -> "3"
+        D4 -> "4"
+        D5 -> "5"
+        D6 -> "6"
+        D7 -> "7"
+        D8 -> "8"
+        D9 -> "9"
+
+permutations :: Ord a => Set a -> [[a]]
+permutations values =
+    if Set.null values then
+        [[]]
+    else
+        concat . Set.toList . (Set.map (\(first,others) -> map (first :) (permutations others)))
+            $ Set.map (\v -> (v, Set.delete v values)) values
+
+
+decodeOutputValue :: Entry -> Int
+decodeOutputValue (signalPatterns, outputValue) =
+    read . concat . map digitToString . map (decodeDigit mapping) $ outputValue
+    where
+        mapping = findMapping signalPatterns
+
+decodeDigit :: [(DisplayedDigit, Digit)] -> DisplayedDigit -> Digit
+decodeDigit mapping displayedDigit =
+    fromJust $ lookup displayedDigit mapping
+
+decodeOutputValues :: [Entry] -> [Int]
+decodeOutputValues entries =
+    map decodeOutputValue entries
+
+sumOutputValues :: [Entry] -> Int
+sumOutputValues entries =
+    sum . decodeOutputValues $ entries
+
 main :: IO ()
 main = do
     raw <- getContents
-    print . countEasyDigits . parseInput $ raw
+    print . sumOutputValues . parseInput $ raw
