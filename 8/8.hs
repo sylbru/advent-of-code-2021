@@ -5,24 +5,10 @@ import Data.List.Split (splitOn)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
-{-
-0: abcefg  (6)
-1: cf      (2) #easy
-2: acdeg   (5)
-3: acdfg   (5)
-4: bcdf    (4) #easy
-5: abdfg   (5)
-6: abdefg  (6)
-7: acf     (3) #easy
-8: abcdefg (7) #easy
-9: abcdfg  (6)
--}
-
 data Digit = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9 deriving (Show)
 data Segment = A | B | C | D | E | F | G deriving (Show, Eq, Ord)
 type DisplayedDigit = Set Segment
 type Entry = ([DisplayedDigit], [DisplayedDigit])
-
 
 parseInput :: String -> [Entry]
 parseInput input =
@@ -57,6 +43,23 @@ parseSegment char =
 listTo2Tuple :: [a] -> (a, a)
 listTo2Tuple (a1:a2:_) = (a1, a2)
 
+segmentsForDigit :: Digit -> DisplayedDigit
+segmentsForDigit digit =
+    Set.fromList $
+        case digit of
+            D0 -> [A, B, C, E, F, G]
+            D1 -> [C, F]
+            D2 -> [A, C, D, E, G]
+            D3 -> [A, C, D, F, G]
+            D4 -> [B, C, D, F]
+            D5 -> [A, B, D, F, G]
+            D6 -> [A, B, D, E, F, G]
+            D7 -> [A, C, F]
+            D8 -> [A, B, C, D, E, F, G]
+            D9 -> [A, B, C, D, F, G]
+
+-- Part one
+
 countEasyDigits :: [Entry] -> Int
 countEasyDigits = sum . map countEasyDigitsForEntry
 
@@ -72,20 +75,7 @@ easyDigitsLengths :: [Int]
 easyDigitsLengths =
     (map (Set.size . segmentsForDigit) [D1, D4, D7, D8])
 
-segmentsForDigit :: Digit -> DisplayedDigit
-segmentsForDigit digit =
-    Set.fromList $
-        case digit of
-            D0 -> [A, B, C, E, F, G]
-            D1 -> [C, F]
-            D2 -> [A, C, D, E, G]
-            D3 -> [A, C, D, F, G]
-            D4 -> [B, C, D, F]
-            D5 -> [A, B, D, F, G]
-            D6 -> [A, B, D, E, F, G]
-            D7 -> [A, C, F]
-            D8 -> [A, B, C, D, E, F, G]
-            D9 -> [A, B, C, D, F, G]
+-- Part two
 
 type Mapping = [(Digit, DigitMapping)]
 type DigitMapping = [(Segment, Set Segment)]
@@ -118,11 +108,6 @@ corrupt mapping digit =
     in
     Set.map (\s -> fromJust $ lookup s mappingTuples) digit
 
-findDigit1 :: [DisplayedDigit] -> DisplayedDigit
-findDigit1 signalPatterns =
-    head . filter (\d -> Set.size d == Set.size (segmentsForDigit D1)) $ signalPatterns
-
-
 allDigits :: [Digit]
 allDigits =
     [D0, D1, D2, D3, D4, D5, D6, D7, D8, D9]
@@ -130,12 +115,6 @@ allDigits =
 allSegments :: Set Segment
 allSegments =
     Set.fromList [A, B, C, D, E, F, G]
-
-digitsWithOneMoreSegment :: Digit -> [Digit]
-digitsWithOneMoreSegment digit =
-    filter
-        (\otherDigit -> Set.size (segmentsForDigit otherDigit) == Set.size (segmentsForDigit digit) + 1)
-        allDigits
 
 digitToString :: Digit -> String
 digitToString digit =
@@ -158,7 +137,6 @@ permutations values =
     else
         concat . Set.toList . (Set.map (\(first,others) -> map (first :) (permutations others)))
             $ Set.map (\v -> (v, Set.delete v values)) values
-
 
 decodeOutputValue :: Entry -> Int
 decodeOutputValue (signalPatterns, outputValue) =
