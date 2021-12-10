@@ -1,17 +1,34 @@
-import Data.Maybe (mapMaybe)
+data Diagnostic
+    = Corrupted Char -- Syntax error on this char
+    | Incomplete [Char] -- Incomplete line with this stack of open chunks
+    | Correct
 
 syntaxErrorScore :: String -> Int
 syntaxErrorScore input =
-    toScore . mapMaybe findSyntaxError . lines $ input
+    toErrorScore . map diagnoseLine . lines $ input
 
-findSyntaxError :: String -> Maybe Char
-findSyntaxError [] = Nothing
-findSyntaxError (stackInit:line) =
+toErrorScore :: [Diagnostic] -> Int
+toErrorScore diagnostics =
+    sum . map value $ diagnostics
+    where
+        value (Corrupted char) =
+            case char of
+                ')' -> 3
+                ']' -> 57
+                '}' -> 1197
+                '>' -> 25137
+                _ -> 0
+        value _ = 0
+
+diagnoseLine :: String -> Diagnostic
+diagnoseLine [] = Correct
+diagnoseLine (stackInit:line) =
     go [stackInit] line
     where
-        go :: [Char] -> String -> Maybe Char
-        go _ [] = Nothing
-        go [] (c:_) = Just c
+        go :: [Char] -> String -> Diagnostic
+        go [] [] = Correct
+        go stack [] = Incomplete stack
+        go [] (c:_) = Corrupted c
         go stack@(s:stackRest) (c:lineRest) =
             if isOpeningChar c then
                 go (c:stack) lineRest
@@ -19,7 +36,7 @@ findSyntaxError (stackInit:line) =
                 if c `matchesOpeningChar` s then
                     go stackRest lineRest
                 else
-                    Just c
+                    Corrupted c
             else
                 go stack lineRest
 
@@ -37,19 +54,6 @@ matchesOpeningChar c s =
         ('{', '}') -> True
         ('<', '>') -> True
         _ -> False
-
-toScore :: [Char] -> Int
-toScore errors =
-    sum $ map value errors
-    where
-        value :: Char -> Int
-        value char =
-            case char of
-                ')' -> 3
-                ']' -> 57
-                '}' -> 1197
-                '>' -> 25137
-                _ -> 0
 
 main :: IO ()
 main = do
