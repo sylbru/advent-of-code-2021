@@ -14,6 +14,14 @@ parseInput =
         stringFromChar :: Char -> String
         stringFromChar = (:[])
 
+step :: Cave -> Cave
+step =
+    incrementAll
+    where
+        incrementAll :: Cave -> Cave
+        incrementAll =
+            map (map (+ 1))
+
 printMap :: Cave -> String
 printMap =
     unlines . map printLine
@@ -23,3 +31,5 @@ main :: IO ()
 main = do
     raw <- getContents
     putStrLn . printMap . parseInput $ raw
+    putStrLn . printMap . step . parseInput $ raw
+    putStrLn . printMap . step . step . parseInput $ raw
