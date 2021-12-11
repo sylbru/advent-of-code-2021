@@ -45,29 +45,25 @@ toCompletionScore diagnostics =
     sort scores !! (length scores `div` 2)
     where
         value (Incomplete []) = 0
-        value (Incomplete stack) = completionScoreLine . autocomplete $ stack
+        value (Incomplete stack) =
+            -- no need for autocompleting the line, let’s just
+            -- use the opening char for computing the score
+            completionScoreLine stack
         value _ = 0
 
 completionScoreLine :: [Char] -> Int
-completionScoreLine =
-    foldl fn 0
+completionScoreLine stack =
+    foldl fn 0 stack
     where
         fn acc char =
             acc * 5
                 + (case char of
-                    ')' -> 1
-                    ']' -> 2
-                    '}' -> 3
-                    '>' -> 4
+                    '(' -> 1
+                    '[' -> 2
+                    '{' -> 3
+                    '<' -> 4
                     _ -> 0
                 )
-
-autocomplete :: [Char] -> [Char]
-autocomplete openChunks =
-    mapMaybe matchingChar openChunks
-    where
-        matchingChar openingChar =
-            lookup openingChar matchingChars
 
 diagnoseLine :: String -> Diagnostic
 diagnoseLine [] = Correct
