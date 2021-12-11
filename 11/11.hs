@@ -16,8 +16,12 @@ parseInput =
         stringFromChar :: Char -> String
         stringFromChar = (:[])
 
+printMap :: Cave -> String
+printMap =
+    unlines . map printLine
+    where printLine = concat . map show
 
 main :: IO ()
 main = do
     raw <- getContents
-    print . parseInput $ raw
+    putStrLn . printMap . parseInput $ raw
