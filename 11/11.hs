@@ -1,5 +1,3 @@
-import Data.Array
-
 type EnergyLevel = Int
 type Cave = [[EnergyLevel]]
 
