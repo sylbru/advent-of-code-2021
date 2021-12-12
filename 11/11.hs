@@ -16,11 +16,43 @@ parseInput =
 
 step :: Cave -> Cave
 step =
-    incrementAll
+    resetFlashing . flash . incrementAll
     where
         incrementAll :: Cave -> Cave
         incrementAll =
-            map (map (+ 1))
+            map (map (\energy -> if energy >= 0 then energy + 1 else energy))
+
+        flash :: Cave -> Cave
+        flash =
+            map (map (\energy -> if energy > 9 then -1 else energy))
+
+        resetFlashing :: Cave -> Cave
+        resetFlashing =
+            map (map (\energy -> if energy < 0 then 0 else energy))
+
+flash :: Cave -> Cave
+flash cave =
+    cave
+
+withCoords :: Cave -> [[((Int, Int), EnergyLevel)]]
+withCoords cave =
+    indexedMap (\(col, l) -> lineWithCoords col l) cave
+    where
+        lineWithCoords :: Int -> [EnergyLevel] -> [((Int, Int), EnergyLevel)]
+        lineWithCoords col line =
+            let
+                coords = map (\row -> (col, row)) [0..]
+            in
+            zip (take (length line) coords) line
+
+indexedMap :: ((Int, a) -> b) -> [a] -> [b]
+indexedMap f l =
+    go 0 f l
+    where
+        go :: Int -> ((Int, a) -> b) -> [a] -> [b]
+        go _ _ [] = []
+        go i fun (x:xs) =
+            fun (i,x) : go (i + 1) fun xs
 
 printMap :: Cave -> String
 printMap =
