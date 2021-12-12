@@ -14,6 +14,13 @@ parseInput =
         stringFromChar :: Char -> String
         stringFromChar = (:[])
 
+
+nSteps :: Int -> Cave -> Cave
+nSteps n cave
+    | n <= 0 = cave
+    | otherwise = nSteps (n - 1) (step cave)
+
+
 step :: Cave -> Cave
 step =
     resetFlashing . flash . prepareFlashing . incrementAll
@@ -104,9 +111,8 @@ printMap =
     unlines . map printLine
     where printLine = concat . map show
 
+
 main :: IO ()
 main = do
     raw <- getContents
-    putStrLn . printMap . parseInput $ raw
-    putStrLn . printMap . step . parseInput $ raw
-    putStrLn . printMap . step . step . parseInput $ raw
+    putStrLn . printMap . nSteps 100 . parseInput $ raw
