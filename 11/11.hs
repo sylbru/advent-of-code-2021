@@ -15,28 +15,39 @@ parseInput =
         stringFromChar = (:[])
 
 
-nSteps :: Int -> Cave -> Cave
-nSteps n cave
-    | n <= 0 = cave
-    | otherwise = nSteps (n - 1) (step cave)
-
-
-step :: Cave -> Cave
-step =
-    resetFlashing . flash . prepareFlashing . incrementAll
+flashesForNSteps :: Int -> Cave -> Int
+flashesForNSteps n_ cave_ =
+    go 0 n_ cave_
     where
-        incrementAll :: Cave -> Cave
-        incrementAll =
-            map (map (\energy -> if energy >= 0 then energy + 1 else energy))
+        go :: Int -> Int -> Cave -> Int
+        go acc n cave
+            | n <= 0 = acc
+            | otherwise =
+                let
+                    (newCave, flashes) = step cave
+                in
+                go (acc + flashes) (n - 1) newCave
 
+step :: Cave -> (Cave, Int)
+step cave =
+    let
+        newCaveBeforeReset = flash . prepareFlashing . incrementAll $ cave
+    in
+    resetFlashing newCaveBeforeReset
+
+incrementAll :: Cave -> Cave
+incrementAll =
+    map (map (\energy -> if energy >= 0 then energy + 1 else energy))
 
 prepareFlashing :: Cave -> Cave
 prepareFlashing =
     map (map (\energy -> if energy > 9 then -1 else energy))
 
-resetFlashing :: Cave -> Cave
-resetFlashing =
-    map (map (\energy -> if energy < 0 then 0 else energy))
+resetFlashing :: Cave -> (Cave, Int)
+resetFlashing cave =
+    (map (map (\energy -> if energy < 0 then 0 else energy)) cave
+    , length . filter (\energy -> energy < 0) . concat $ cave
+    )
 
 flashingDone :: Cave -> Cave
 flashingDone =
@@ -115,4 +126,4 @@ printMap =
 main :: IO ()
 main = do
     raw <- getContents
-    putStrLn . printMap . nSteps 100 . parseInput $ raw
+    print . flashesForNSteps 100 . parseInput $ raw
