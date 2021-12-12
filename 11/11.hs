@@ -1,8 +1,6 @@
 type EnergyLevel = Int
 type Cave = [[EnergyLevel]]
 
--- example as a single line: 5483143223\n2745854711\n5264556173\n6141336146\n6357385478\n4167524645\n2176841721\n6882881134\n4846848554\n5283751526\n
-
 parseInput :: String -> Cave
 parseInput =
     map parseLine . lines
@@ -13,6 +11,17 @@ parseInput =
 
         stringFromChar :: Char -> String
         stringFromChar = (:[])
+
+stepsToSynchronize :: Cave -> Int
+stepsToSynchronize cave_ =
+    go 0 cave_
+    where
+        go :: Int -> Cave -> Int
+        go acc cave =
+            if all (all (== 0)) cave then
+                acc
+            else
+                go (acc + 1) (fst $ step cave)
 
 
 flashesForNSteps :: Int -> Cave -> Int
@@ -127,3 +136,4 @@ main :: IO ()
 main = do
     raw <- getContents
     print . flashesForNSteps 100 . parseInput $ raw
+    print . stepsToSynchronize . parseInput $ raw
