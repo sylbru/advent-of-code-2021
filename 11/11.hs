@@ -36,14 +36,16 @@ flash cave =
 
 withCoords :: Cave -> [[((Int, Int), EnergyLevel)]]
 withCoords cave =
-    indexedMap (\(col, l) -> lineWithCoords col l) cave
-    where
-        lineWithCoords :: Int -> [EnergyLevel] -> [((Int, Int), EnergyLevel)]
-        lineWithCoords col line =
-            let
-                coords = map (\row -> (col, row)) [0..]
-            in
-            zip (take (length line) coords) line
+    indexedMap
+        (\(col, line) ->
+            indexedMap
+                (\(row, energyLevel) ->
+                    ((col, row), energyLevel)
+                )
+                line
+        )
+        cave
+
 
 indexedMap :: ((Int, a) -> b) -> [a] -> [b]
 indexedMap f l =
