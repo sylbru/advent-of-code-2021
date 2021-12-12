@@ -16,23 +16,66 @@ parseInput =
 
 step :: Cave -> Cave
 step =
-    resetFlashing . flash . incrementAll
+    resetFlashing . flash . prepareFlashing . incrementAll
     where
         incrementAll :: Cave -> Cave
         incrementAll =
             map (map (\energy -> if energy >= 0 then energy + 1 else energy))
 
-        flash :: Cave -> Cave
-        flash =
-            map (map (\energy -> if energy > 9 then -1 else energy))
 
-        resetFlashing :: Cave -> Cave
-        resetFlashing =
-            map (map (\energy -> if energy < 0 then 0 else energy))
+prepareFlashing :: Cave -> Cave
+prepareFlashing =
+    map (map (\energy -> if energy > 9 then -1 else energy))
+
+resetFlashing :: Cave -> Cave
+resetFlashing =
+    map (map (\energy -> if energy < 0 then 0 else energy))
+
+flashingDone :: Cave -> Cave
+flashingDone =
+    map (map (\energy -> if energy < 0 then energy - 1 else energy))
 
 flash :: Cave -> Cave
 flash cave =
-    cave
+    let
+        flashing =
+            map fst $ filter (\(_, energyLevel) -> energyLevel == -1) (concat $ withCoords cave)
+    in
+    if null flashing then
+        cave
+    else
+        flash . prepareFlashing . flashingDone . applyFlashes flashing $ cave
+
+applyFlashes :: [(Int, Int)] -> Cave -> Cave
+applyFlashes [] cave = cave
+applyFlashes (x:xs) cave =
+    let
+        newCave = incrementSeveralAt (adjacentPoints x) cave
+    in
+    applyFlashes xs newCave
+
+adjacentPoints :: (Int, Int) -> [(Int, Int)]
+adjacentPoints (col, row) =
+    [ (y, x) |
+        y <- [col - 1..col + 1],
+        x <- [row - 1..row + 1],
+        (y, x) /= (col, row)
+    ]
+
+incrementSeveralAt :: [(Int, Int)] -> Cave -> Cave
+incrementSeveralAt coords cave =
+    indexedMap
+        (\(col, line) ->
+            indexedMap
+                (\(row, energyLevel) ->
+                    if energyLevel >= 0 && (col, row) `elem` coords then
+                        energyLevel + 1
+                    else
+                        energyLevel
+                )
+                line
+        )
+        cave
 
 withCoords :: Cave -> [[((Int, Int), EnergyLevel)]]
 withCoords cave =
