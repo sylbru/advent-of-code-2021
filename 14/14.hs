@@ -2,44 +2,27 @@ import Data.Map.Strict (Map, empty, alter, toList)
 import Data.List.Split (splitOn)
 import Data.Maybe (mapMaybe, fromJust, maybe)
 
-data Element = N | C | B | H deriving (Eq, Show, Ord)
-
+type Element = Char
 type Polymer = [Element]
 type Rule = ((Element, Element), Element)
 
 parseInput :: String -> (Polymer, [Rule])
 parseInput input =
     case splitOn "\n\n" input of
-        template:rules:[] -> (parseTemplate template, parseRules rules)
+        template:rules:[] -> (template, parseRules rules)
         _ -> ([], [])
-
-parseTemplate :: String -> Polymer
-parseTemplate =
-    mapMaybe parseElement
-
-parseElement :: Char -> Maybe Element
-parseElement char =
-    case char of
-        'B' -> Just B
-        'C' -> Just C
-        'H' -> Just H
-        'N' -> Just N
-        _ -> Nothing
 
 parseRules :: String -> [Rule]
 parseRules input =
-    mapMaybe parseRule $ splitOn "\n" input
+    mapMaybe parseRule . lines $ input
 
 parseRule :: String -> Maybe Rule
 parseRule input =
     case splitOn " -> " input of
-        (pair@[_,_]) : ([replacement]) : [] ->
-            Just ((listTo2Tuple $ mapMaybe parseElement pair), fromJust $ parseElement replacement)
+        (pair@[p1,p2]) : [replacement] : [] ->
+            Just ((p1,p2), replacement)
 
         _ -> Nothing
-
-listTo2Tuple :: [a] -> (a, a)
-listTo2Tuple (a1:a2:_) = (a1, a2)
 
 step :: [Rule] -> Polymer -> Polymer
 step rules_ polymer_ =
@@ -58,9 +41,6 @@ step rules_ polymer_ =
 
         _ ->
             polymer_
-
-printPolymer :: Polymer -> String
-printPolymer = concat . map show
 
 steps :: Int -> [Rule] -> Polymer -> Polymer
 steps 0 _ polymer = polymer
@@ -102,5 +82,4 @@ main = do
     let (polymer, rules) = parseInput raw
     let finalPolymer = steps 10 rules polymer
 
-    putStrLn . printPolymer $ finalPolymer
     print $ count finalPolymer
