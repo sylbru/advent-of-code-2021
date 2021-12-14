@@ -14,7 +14,7 @@ data Cave = Start | End | Small String | Big String
 
 type Connection = (Cave, Cave)
 type CaveSystem = [Connection]
-type Path = [Connection]
+type Path = [Cave]
 
 exampleCaveSystem :: CaveSystem
 exampleCaveSystem =
@@ -53,39 +53,38 @@ explore fromCave previousPath bannedCaves caveSystem =
                 (Big _) -> bannedCaves
                 _ -> fromCave:bannedCaves
 
-        possiblePaths =
+        possibleCaves =
             stepExplore fromCave previousPath newBannedCaves caveSystem
 
-        nextPaths :: [Path]
-        nextPaths =
+        nextCaves :: [Cave]
+        nextCaves =
+            map snd
+                $ filter
+                    (\(from, to) -> from == fromCave && (not $ to `elem` bannedCaves))
+                    caveSystem
             concat $ map
                 (\path ->
-                    explore (fromJust $ currentCaveFromPath path) path newBannedCaves caveSystem
+                    explore (head path) path newBannedCaves caveSystem
                 )
-                possiblePaths
+                possibleCaves
+
     in
     if fromCave == End then
         []
     else
-        map (\path -> previousPath ++ path) nextPaths
-
-
-currentCaveFromPath :: Path -> Maybe Cave
-currentCaveFromPath path =
-    case path of
-        [] -> Nothing -- no previousPath and no validNextConnections : there is no way out
-        ((_, nowAt):_) -> Just nowAt
+        map (\nextCave -> nextCave:previousPath) nextCaves
 
 
 stepExplore :: Cave -> Path -> [Cave] -> CaveSystem -> [Path]
 stepExplore fromCave previousPath bannedCaves caveSystem =
     let
-        validNextConnections =
-            filter
-                (\(from, to) -> from == fromCave && (not $ to `elem` bannedCaves))
-                caveSystem
+        nextCaves =
+            map snd
+                $ filter
+                    (\(from, to) -> from == fromCave && (not $ to `elem` bannedCaves))
+                    caveSystem
     in
-    map (:previousPath) validNextConnections
+    map (:previousPath) nextCaves
 
 main :: IO ()
 main =
