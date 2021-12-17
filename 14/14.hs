@@ -80,6 +80,6 @@ main :: IO ()
 main = do
     raw <- getContents
     let (polymer, rules) = parseInput raw
-    let finalPolymer = steps 10 rules polymer
+    let finalPolymer = steps 40 rules polymer
 
     print $ count finalPolymer
