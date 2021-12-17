@@ -1,10 +1,9 @@
 import Data.Char (isSpace)
 import Data.List (unfoldr)
+import Data.Map.Strict (Map, fromList, (!), adjust)
 
-type LanternfishAges = Int
-
-testInput :: String
-testInput = "3,4,3,1,2\n"
+-- Map: age -> count
+type LanternfishAges = Map Int Int
 
 trim :: String -> String
 trim = trimWith isSpace
@@ -29,64 +28,36 @@ split delimiter string =
 
 
 parseInput :: String -> LanternfishAges
-parseInput =
-    foldr (\acc i -> acc + 16 * i) 0 . reverse . map read . split ',' . trim
-
-
-nextDay :: LanternfishAges -> LanternfishAges
-nextDay ages_ =
-    -- nextDay 14538 = 9857
-    -- nextDay 9857 = 41864 (pas forcément : l’ordre peut être différent, donc la représentation aussi)
-    -- countFish (nextDay 9857) == countFish 41864
-    -- au bout d’un moment, on perd le premier chiffre quand il passe à zéro :
-    -- on perd l’information que ce chiffre existe. Il faudrait donc plutôt utiliser des caractères hexa ?
-    -- ou plutôt ajouter un 1 au début qu’on enlève à la sortie ?
-    go 0 ages_
+parseInput input =
+    go (fromList $ map (\age -> (age, 0)) [0..8]) (map read . split ',' . trim $ input)
     where
-        go col ages =
-            if ages == 0 then
-                0
-            else
-                if ages `mod` 16 > 0 then
-                    (go (col + 1) (ages `div` 16))
-                        + (16 ^ col) * (ages `mod` 16 - 1) 
-                else
-                    (go (col + 2) (ages * 16))
-                    + 104 -- (6 et 8)
+        go :: LanternfishAges -> [Int] -> LanternfishAges
+        go ages [] = ages
+        go ages (fishAge:rest) =
+            go (adjust (+ 1) fishAge ages) rest
 
-atDay :: Int -> LanternfishAges -> LanternfishAges
-atDay d ages =
-    if d <= 0 then
-        ages
-    else
-        atDay (d - 1) (nextDay ages)
 
-agesToList :: LanternfishAges -> [Int]
-agesToList ages =
-    reverse (unfoldr f ages)
-    where
-        f :: Int -> Maybe (Int, Int)
-        f v =
-            case (v `div` 16, v `mod` 16) of
-                (0, 0) ->
-                    Nothing
+countFishAtDay :: Int -> LanternfishAges -> Int
+countFishAtDay 0 ages =
+    foldr (+) 0 ages
+countFishAtDay n ages =
+    countFishAtDay (n - 1) (step ages)
 
-                (_, remainder) ->
-                    Just (remainder, (v - remainder) `div` 16)
-
-countFish :: LanternfishAges -> Int
-countFish ages_ =
-    go 0 ages_
-    where
-        go :: Int -> LanternfishAges -> Int
-        go acc ages =
-            if ages <= 0 then
-                acc
-            else
-                go (acc + 1) (ages `div` 16)
-
+step :: LanternfishAges -> LanternfishAges
+step ages =
+    fromList
+        [ (0, ages ! 1)
+        , (1, ages ! 2)
+        , (2, ages ! 3)
+        , (3, ages ! 4)
+        , (4, ages ! 5)
+        , (5, ages ! 6)
+        , (6, (ages ! 7) + (ages ! 0))
+        , (7, ages ! 8)
+        , (8, ages ! 0)
+        ]
 
 main :: IO ()
 main = do
     raw <- getContents
-    print . countFish . atDay 80 . parseInput $ testInput
+    print . countFishAtDay 256 . parseInput $ raw
