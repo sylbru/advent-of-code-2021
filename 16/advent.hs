@@ -4,7 +4,6 @@ type Bit = Bool
 
 data Packet = Packet
     { version :: Int
-    , packetType :: Int
     , contents :: Contents
     } deriving (Show)
 
@@ -37,7 +36,6 @@ parsePacket bits =
         Just
             ( Packet
                 { version = bitsToInt version_
-                , packetType = bitsToInt type_
                 , contents = parsedContents
                 }
             , restBits
@@ -66,20 +64,23 @@ parseContents type_ bits =
         in
         (Operation operator parsedOperands, bitsLeft)
 
+
 parseLiteral :: [Bit] -> (Int, [Bit])
 parseLiteral bits =
     (\(i,r) -> (bitsToInt i, r)) (toGroups bits)
     where
         toGroups bits_ =
-            let ((keepGoing:first), rest) = splitAt 5 bits_
+            let
+                ((keepReading:first), rest) = splitAt 5 bits_
             in
-            if keepGoing then
+            if keepReading then
                 let
                     (r, rr) = toGroups rest
                 in
                 (first ++ r, rr)
             else
                 (first, rest)
+
 
 parseOperands :: [Bit] -> ([Packet], [Bit])
 
@@ -197,6 +198,7 @@ hexToBits hexString =
 printBits :: [Bit] -> String
 printBits bits = map (\bit -> if bit then '1' else '0') bits
 
+main :: IO ()
 main = do
     raw <- getContents
     print . sumVersions . fst . fromJust . parsePacket . hexToBits $ raw
