@@ -8,22 +8,35 @@ data Packet = Packet
     , contents :: Contents
     } deriving (Show)
 
-data Contents = Operation [Packet] | Literal Int deriving (Show)
+data Contents
+    = Literal Int
+    | Operation Operator [Packet]
+    deriving (Show)
+
+data Operator
+    = Sum
+    | Product
+    | Minimum
+    | Maximum
+    | GreaterThan
+    | LessThan
+    | EqualTo
+    deriving (Show)
 
 parsePacket :: [Bit] -> Maybe (Packet, [Bit])
 parsePacket bits =
     let
-        (header, contents) = splitAt 6 bits
-        (version, type_) = splitAt 3 header
+        (header, contents_) = splitAt 6 bits
+        (version_, type_) = splitAt 3 header
     in
     if all not bits then
         Nothing
     else
-        let (parsedContents, restBits) = parseContents (bitsToInt type_) contents
+        let (parsedContents, restBits) = parseContents (bitsToInt type_) contents_
         in
         Just
             ( Packet
-                { version = bitsToInt version
+                { version = bitsToInt version_
                 , packetType = bitsToInt type_
                 , contents = parsedContents
                 }
@@ -40,9 +53,18 @@ parseContents type_ bits =
         (Literal parsedLiteral, bitsLeft)
     else
         let
-            (parsedOperation, bitsLeft) = parseOperation bits
+            (parsedOperands, bitsLeft) = parseOperands bits
+            operator =
+                case type_ of
+                    0 -> Sum
+                    1 -> Product
+                    2 -> Minimum
+                    3 -> Maximum
+                    5 -> GreaterThan
+                    6 -> LessThan
+                    7 -> EqualTo
         in
-        (Operation parsedOperation, bitsLeft)
+        (Operation operator parsedOperands, bitsLeft)
 
 parseLiteral :: [Bit] -> (Int, [Bit])
 parseLiteral bits =
@@ -59,25 +81,26 @@ parseLiteral bits =
             else
                 (first, rest)
 
-parseOperation :: [Bit] -> ([Packet], [Bit])
+parseOperands :: [Bit] -> ([Packet], [Bit])
 
 -- Mode 0: subpackets span a given length
-parseOperation (False:rest) =
+parseOperands (False:rest) =
     let
-        (l, contents) = splitAt 15 rest
+        (l, contents_) = splitAt 15 rest
         totalLength = bitsToInt l
-        (subPacketsBits, bitsLeft) = splitAt totalLength contents
+        (subPacketsBits, bitsLeft) = splitAt totalLength contents_
     in
     (parseSubPackets subPacketsBits, bitsLeft)
 
 -- Mode 1: there is a given number subpackets
-parseOperation (True:rest) =
+parseOperands (True:rest) =
     let
-        (n, contents) = splitAt 11 rest
+        (n, contents_) = splitAt 11 rest
         nbPackets = bitsToInt n
     in
-    parseNSubPackets nbPackets contents
+    parseNSubPackets nbPackets contents_
 
+parseOperands _ = ([],[])
 
 parseSubPackets :: [Bit] -> [Packet]
 parseSubPackets bits =
@@ -107,7 +130,31 @@ sumVersions :: Packet -> Int
 sumVersions packet =
     case contents packet of
         Literal _ -> version packet
-        Operation packets -> version packet + (sum . map sumVersions $ packets)
+        Operation _ packets -> version packet + (sum . map sumVersions $ packets)
+
+computePacket :: Packet -> Int
+computePacket packet =
+    case contents packet of
+        Literal value -> value
+        Operation operator operands ->
+            case operator of
+                Sum -> sum $ map computePacket operands
+                Product -> product $ map computePacket operands
+                Minimum -> minimum $ map computePacket operands
+                Maximum -> maximum $ map computePacket operands
+                GreaterThan ->
+                    let a:b:_ = map computePacket operands
+                    in
+                    if a > b then 1 else 0
+                LessThan ->
+                    let a:b:_ = map computePacket operands
+                    in
+                    if a < b then 1 else 0
+                EqualTo ->
+                    let a:b:_ = map computePacket operands
+                    in
+                    if a == b then 1 else 0
+
 
 bitsToInt :: [Bit] -> Int
 bitsToInt bits =
@@ -153,3 +200,4 @@ printBits bits = map (\bit -> if bit then '1' else '0') bits
 main = do
     raw <- getContents
     print . sumVersions . fst . fromJust . parsePacket . hexToBits $ raw
+    print . computePacket . fst . fromJust . parsePacket . hexToBits $ raw
