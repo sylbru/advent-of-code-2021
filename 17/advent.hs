@@ -36,12 +36,12 @@ step (x,y) (vx,vy) =
       )
     )
 
-vxsForTarget :: Target -> [Int]
-vxsForTarget ((x1, x2), _) =
-    [ v | v <- [0..200]
-        , (v * (v + 1)) `div` 2 >= x1
-        && (v * (v + 1)) `div` 2 <= x2
-    ]
+-- vxsForTarget :: Target -> [Int]
+-- vxsForTarget ((x1, x2), _) =
+--     [ v | v <- [0..200]
+--         , (v * (v + 1)) `div` 2 >= x1
+--         && (v * (v + 1)) `div` 2 <= x2
+--     ]
 
 tryVysForTargetWithVx :: Target -> Int -> [(Velocity, Int)]
 tryVysForTargetWithVx target vx =
