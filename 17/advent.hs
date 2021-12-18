@@ -45,11 +45,11 @@ step (x,y) (vx,vy) =
 
 tryVysForTargetWithVx :: Target -> Int -> [(Velocity, Int)]
 tryVysForTargetWithVx target vx =
-    mapMaybe (\vy -> checkForTarget (vx,vy) target) [-200..200]
+    mapMaybe (\vy -> checkForTarget (vx,vy) target) [(fst $ snd target)..200]
 
 allHeights :: Target -> [(Velocity, Int)]
 allHeights target =
-    concat $ map (tryVysForTargetWithVx target) [-300..300]
+    concat $ map (tryVysForTargetWithVx target) [1..(snd $ fst target)]
 
 main :: IO ()
 main = do
