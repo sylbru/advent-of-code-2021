@@ -36,23 +36,24 @@ step (x,y) (vx,vy) =
       )
     )
 
--- vxsForTarget :: Target -> [Int]
--- vxsForTarget ((x1, x2), _) =
---     [ v | v <- [0..200]
---         , (v * (v + 1)) `div` 2 >= x1
---         && (v * (v + 1)) `div` 2 <= x2
---     ]
-
 tryVysForTargetWithVx :: Target -> Int -> [(Velocity, Int)]
 tryVysForTargetWithVx target vx =
-    mapMaybe (\vy -> checkForTarget (vx,vy) target) [(fst $ snd target)..200]
+    let
+        minVy = fst $ snd target
+        maxVy = 200
+    in
+    mapMaybe (\vy -> checkForTarget (vx,vy) target) [minVy..maxVy]
 
 allHeights :: Target -> [(Velocity, Int)]
 allHeights target =
-    concat $ map (tryVysForTargetWithVx target) [1..(snd $ fst target)]
+    let
+        minVx = head [ vx | vx <- [1..], (vx * (vx + 1)) `div` 2 >= (fst $ fst target) ]
+        maxVx = snd $ fst target
+    in
+    concat $ map (tryVysForTargetWithVx target) [minVx..maxVx]
 
 main :: IO ()
 main = do
     let allOfThem = allHeights input
-    print . maximum . map (\(_,h) -> h) $ allOfThem
-    print . length . map (\(v,_) -> v) $ allOfThem
+    -- print . maximum . map (\(_,h) -> h) $ allOfThem
+    print . length $ allOfThem
