@@ -3,14 +3,14 @@ import Data.Maybe (mapMaybe)
 type Position = (Int, Int)
 type Velocity = (Int, Int)
 
---             x          y
+--            ((x1, x2),  (y1, y2))
 type Target = ((Int,Int), (Int,Int))
-
-input :: Target
-input = ((207, 263), (-115, -63))
 
 example :: Target
 example = ((20, 30), (-10, -5))
+
+input :: Target
+input = ((207, 263), (-115, -63))
 
 checkForTarget :: Velocity -> Target -> Maybe (Velocity, Int)
 checkForTarget initialVelocity target_ =
@@ -20,13 +20,14 @@ checkForTarget initialVelocity target_ =
             if x1 <= x && x <= x2 && y1 <= y && y <= y2 then
                 Just (initialVelocity, highestY)
             else
-                if vx /= 0 || (x >= x1 && x <= x2 && y >= y1) then
+                if x > x2 || y < y1 || (vx == 0 && x < x1) then
+                    -- too far already, or too low already, or in a vertical movement and too close
+                    Nothing
+                else
                     let
                         (newPos, newVelocity) = step pos velocity
                     in
                     go newPos newVelocity target (max (snd newPos) highestY)
-                else
-                    Nothing
 
 step :: Position -> Velocity -> (Position, Velocity)
 step (x,y) (vx,vy) =
