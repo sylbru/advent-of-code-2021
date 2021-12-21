@@ -45,8 +45,6 @@ parseAlgorithm :: String -> Algorithm
 parseAlgorithm input =
     map parsePixel input
 
-
-
 printImage :: Image -> String
 printImage image =
     let
@@ -134,7 +132,5 @@ main :: IO ()
 main = do
     raw <- getContents
     let (algorithm, inputImage) = parseInput raw
-    -- putStrLn $ printImage inputImage
-    let enhanced = enhanceNTimes 2 Dark algorithm inputImage
-    -- putStrLn $ printImage enhanced
+    let enhanced = enhanceNTimes 50 Dark algorithm inputImage
     print $ countLitPixels enhanced
