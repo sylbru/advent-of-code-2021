@@ -73,8 +73,8 @@ printPixel pixel =
         Light -> '█'
         Dark -> ' '
 
-enhance :: Algorithm -> Image -> Image
-enhance algorithm inputImage =
+enhance :: Algorithm -> Pixel -> Image -> Image
+enhance algorithm background inputImage =
     let
         (minX, maxX) = foldrWithKey (\(x,_) _ acc -> (min (fst acc) x, max (snd acc) x)) (0,0) inputImage
         (minY, maxY) = foldrWithKey (\(_,y) _ acc -> (min (fst acc) y, max (snd acc) y)) (0,0) inputImage
@@ -83,18 +83,18 @@ enhance algorithm inputImage =
         (\y ->
             map
                 (\x ->
-                    ((x,y), enhancePixel (x,y) algorithm inputImage)
+                    ((x,y), enhancePixel (x,y) algorithm background inputImage)
                 )
                 [minX - 1 .. maxX + 1]
         )
         [minY - 1 .. maxY + 1]
 
-enhancePixel :: (Int, Int) -> Algorithm -> Image -> Pixel
-enhancePixel (x,y) algorithm image =
+enhancePixel :: (Int, Int) -> Algorithm -> Pixel -> Image -> Pixel
+enhancePixel (x,y) algorithm background image =
     let
         inputPixels =
             map
-                (\coords -> fromMaybe Dark $ Data.Map.Strict.lookup coords image)
+                (\coords -> fromMaybe background $ Data.Map.Strict.lookup coords image)
                 [ (x - 1, y - 1) , (x, y - 1) , (x + 1, y - 1)
                 , (x - 1, y) ,     (x, y) ,     (x + 1, y)
                 , (x - 1, y + 1) , (x, y + 1) , (x + 1, y + 1)
@@ -115,12 +115,16 @@ pixelsToInt pixels =
                 Dark ->
                     go (col + 1) rest
 
-enhanceNTimes :: Int -> Algorithm -> Image -> Image
-enhanceNTimes n algorithm inputImage =
+enhanceNTimes :: Int -> Pixel -> Algorithm -> Image -> Image
+enhanceNTimes n background algorithm inputImage =
     if n <= 0 then
         inputImage
     else
-        enhanceNTimes (n - 1) algorithm (enhance algorithm inputImage)
+        enhanceNTimes
+            (n - 1)
+            (if background == Light then Dark else Light)
+            algorithm
+            (enhance algorithm background inputImage)
 
 countLitPixels :: Image -> Int
 countLitPixels image =
@@ -131,6 +135,6 @@ main = do
     raw <- getContents
     let (algorithm, inputImage) = parseInput raw
     putStrLn $ printImage inputImage
-    let enhanced = enhanceNTimes 2 algorithm inputImage
+    let enhanced = enhanceNTimes 2 Dark algorithm inputImage
     putStrLn $ printImage enhanced
     print $ countLitPixels enhanced
