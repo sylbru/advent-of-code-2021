@@ -16,7 +16,7 @@ deterministicRoll (pos, diceAt) =
         diceValue = sum [diceAt..diceAt+2] -- or (diceAt+2)*(diceAt+3) / 2 - diceAt*(diceAt-1) / 2
                                            -- but who cares?
         newPos = 1 + ((pos + diceValue - 1)  `mod` 10)
-        newDiceAt = diceAt + 3
+        newDiceAt = 1 + (diceAt + 3 - 1 `mod` 100)
     in
     (newPos, newDiceAt)
 
