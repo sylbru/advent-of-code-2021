@@ -1,7 +1,7 @@
 import Data.Map.Strict (Map, fromList, foldrWithKey, lookup)
--- import Data.List (map)
+import Data.Maybe (fromMaybe)
 
-data Pixel = Light | Dark deriving (Eq)
+data Pixel = Light | Dark deriving (Eq, Show)
 type Image = Map (Int, Int) Pixel
 type Algorithm = [Pixel]
 
@@ -46,28 +46,24 @@ parseAlgorithm input =
     map parsePixel input
 
 
+
 printImage :: Image -> String
 printImage image =
     let
-        minX = foldrWithKey (\(x,_) _ acc -> min acc x) 0 image
-        minY = foldrWithKey (\(_,y) _ acc -> min acc y) 0 image
-        maxX = foldrWithKey (\(x,_) _ acc -> max acc x) 0 image
-        maxY = foldrWithKey (\(_,y) _ acc -> max acc y) 0 image
-        (w, h) = (1 + maxX - minX, 1 + maxY - minY)
-        emptyImage = (replicate h (replicate w Dark))
-
+        (minX, maxX) = foldrWithKey (\(x,_) _ acc -> (min (fst acc) x, max (snd acc) x)) (0,0) image
+        (minY, maxY) = foldrWithKey (\(_,y) _ acc -> (min (fst acc) y, max (snd acc) y)) (0,0) image
         imageAsList =
-            indexedMap
-                (\(y, row) ->
-                    indexedMap
-                        (\(x, _) ->
+            map
+                (\y ->
+                    map
+                        (\x ->
                             case Data.Map.Strict.lookup (x,y) image of
                                 Just pixel -> pixel
                                 Nothing -> Dark
                         )
-                        row
+                        [minX..maxX]
                 )
-                emptyImage
+                [minY..maxY]
     in
     unlines . map (map printPixel) $ imageAsList
 
@@ -77,8 +73,63 @@ printPixel pixel =
         Light -> '█'
         Dark -> ' '
 
+enhance :: Algorithm -> Image -> Image
+enhance algorithm inputImage =
+    let
+        (minX, maxX) = foldrWithKey (\(x,_) _ acc -> (min (fst acc) x, max (snd acc) x)) (0,0) inputImage
+        (minY, maxY) = foldrWithKey (\(_,y) _ acc -> (min (fst acc) y, max (snd acc) y)) (0,0) inputImage
+    in
+    fromList . concat $ map
+        (\y ->
+            map
+                (\x ->
+                    ((x,y), enhancePixel (x,y) algorithm inputImage)
+                )
+                [minX - 1 .. maxX + 1]
+        )
+        [minY - 1 .. maxY + 1]
+
+enhancePixel :: (Int, Int) -> Algorithm -> Image -> Pixel
+enhancePixel (x,y) algorithm image =
+    let
+        inputPixels =
+            map
+                (\coords -> fromMaybe Dark $ Data.Map.Strict.lookup coords image)
+                [ (x - 1, y - 1)
+                , (x, y - 1)
+                , (x + 1, y - 1)
+                , (x - 1, y)
+                , (x, y)
+                , (x + 1, y)
+                , (x - 1, y + 1)
+                , (x, y + 1)
+                , (x + 1, y + 1)
+                ]
+    in
+    algorithm !! (pixelsToInt inputPixels)
+
+pixelsToInt :: [Pixel] -> Int
+pixelsToInt pixels =
+    go 0 (reverse pixels)
+    where
+        go :: Int -> [Pixel] -> Int
+        go _ [] = 0
+        go col (first:rest) =
+            case first of
+                Light ->
+                    2 ^ col + (go (col + 1) rest)
+                Dark ->
+                    go (col + 1) rest
+
+enhanceNTimes :: Int -> Algorithm -> Image -> Image
+enhanceNTimes 0 algorithm inputImage = inputImage
+enhanceNTimes n algorithm inputImage | n > 0 =
+    enhanceNTimes (n - 1) algorithm (enhance algorithm inputImage)
+
+
 main :: IO ()
 main = do
     raw <- getContents
     let (algorithm, inputImage) = parseInput raw
-    putStrLn $ printImage inputImage
+    -- putStrLn $ printImage inputImage
+    putStrLn $ printImage (enhanceNTimes 2 algorithm inputImage)
