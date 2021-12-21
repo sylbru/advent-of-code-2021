@@ -122,7 +122,7 @@ enhanceNTimes n background algorithm inputImage =
     else
         enhanceNTimes
             (n - 1)
-            (if background == Light then Dark else Light)
+            (algorithm !! (pixelsToInt $ replicate 9 background))
             algorithm
             (enhance algorithm background inputImage)
 
@@ -134,7 +134,7 @@ main :: IO ()
 main = do
     raw <- getContents
     let (algorithm, inputImage) = parseInput raw
-    putStrLn $ printImage inputImage
+    -- putStrLn $ printImage inputImage
     let enhanced = enhanceNTimes 2 Dark algorithm inputImage
-    putStrLn $ printImage enhanced
+    -- putStrLn $ printImage enhanced
     print $ countLitPixels enhanced
