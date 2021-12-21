@@ -1,9 +1,9 @@
 import Data.Map.Strict (Map, fromList, foldrWithKey, lookup, filter)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, fromJust)
 
 data Pixel = Light | Dark deriving (Eq, Show)
 type Image = Map (Int, Int) Pixel
-type Algorithm = [Pixel]
+type Algorithm = Map Int Pixel
 
 parseInput :: String -> (Algorithm, Image)
 parseInput input =
@@ -43,7 +43,10 @@ parsePixel char =
 
 parseAlgorithm :: String -> Algorithm
 parseAlgorithm input =
-    map parsePixel input
+    let
+        pixels = map parsePixel input
+    in
+    fromList (zip [0..length pixels] pixels)
 
 printImage :: Image -> String
 printImage image =
@@ -74,8 +77,13 @@ printPixel pixel =
 enhance :: Algorithm -> Pixel -> Image -> Image
 enhance algorithm background inputImage =
     let
-        (minX, maxX) = foldrWithKey (\(x,_) _ acc -> (min (fst acc) x, max (snd acc) x)) (0,0) inputImage
-        (minY, maxY) = foldrWithKey (\(_,y) _ acc -> (min (fst acc) y, max (snd acc) y)) (0,0) inputImage
+        (minX, maxX, minY, maxY) =
+            foldrWithKey
+                (\(x,y) _ (accMinX, accMaxX, accMinY, accMaxY) ->
+                    (min accMinX x, max accMaxX x, min accMinY y, max accMaxY y)
+                )
+                (0,0,0,0)
+                inputImage
     in
     fromList . concat $ map
         (\y ->
@@ -98,7 +106,7 @@ enhancePixel (x,y) algorithm background image =
                 , (x - 1, y + 1) , (x, y + 1) , (x + 1, y + 1)
                 ]
     in
-    algorithm !! (pixelsToInt inputPixels)
+    fromJust $ Data.Map.Strict.lookup (pixelsToInt inputPixels) algorithm
 
 pixelsToInt :: [Pixel] -> Int
 pixelsToInt pixels =
@@ -120,7 +128,7 @@ enhanceNTimes n background algorithm inputImage =
     else
         enhanceNTimes
             (n - 1)
-            (algorithm !! (pixelsToInt $ replicate 9 background))
+            (fromJust $ Data.Map.Strict.lookup (pixelsToInt $ replicate 9 background) algorithm)
             algorithm
             (enhance algorithm background inputImage)
 
