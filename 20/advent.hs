@@ -1,4 +1,4 @@
-import Data.Map.Strict (Map, fromList, foldrWithKey, lookup)
+import Data.Map.Strict (Map, fromList, foldrWithKey, lookup, filter)
 import Data.Maybe (fromMaybe)
 
 data Pixel = Light | Dark deriving (Eq, Show)
@@ -95,15 +95,9 @@ enhancePixel (x,y) algorithm image =
         inputPixels =
             map
                 (\coords -> fromMaybe Dark $ Data.Map.Strict.lookup coords image)
-                [ (x - 1, y - 1)
-                , (x, y - 1)
-                , (x + 1, y - 1)
-                , (x - 1, y)
-                , (x, y)
-                , (x + 1, y)
-                , (x - 1, y + 1)
-                , (x, y + 1)
-                , (x + 1, y + 1)
+                [ (x - 1, y - 1) , (x, y - 1) , (x + 1, y - 1)
+                , (x - 1, y) ,     (x, y) ,     (x + 1, y)
+                , (x - 1, y + 1) , (x, y + 1) , (x + 1, y + 1)
                 ]
     in
     algorithm !! (pixelsToInt inputPixels)
@@ -122,14 +116,21 @@ pixelsToInt pixels =
                     go (col + 1) rest
 
 enhanceNTimes :: Int -> Algorithm -> Image -> Image
-enhanceNTimes 0 algorithm inputImage = inputImage
-enhanceNTimes n algorithm inputImage | n > 0 =
-    enhanceNTimes (n - 1) algorithm (enhance algorithm inputImage)
+enhanceNTimes n algorithm inputImage =
+    if n <= 0 then
+        inputImage
+    else
+        enhanceNTimes (n - 1) algorithm (enhance algorithm inputImage)
 
+countLitPixels :: Image -> Int
+countLitPixels image =
+    length $ Data.Map.Strict.filter ((==) Light) image
 
 main :: IO ()
 main = do
     raw <- getContents
     let (algorithm, inputImage) = parseInput raw
-    -- putStrLn $ printImage inputImage
-    putStrLn $ printImage (enhanceNTimes 2 algorithm inputImage)
+    putStrLn $ printImage inputImage
+    let enhanced = enhanceNTimes 2 algorithm inputImage
+    putStrLn $ printImage enhanced
+    print $ countLitPixels enhanced
