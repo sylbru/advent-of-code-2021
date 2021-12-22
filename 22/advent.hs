@@ -5,11 +5,13 @@ import Data.Map.Strict (Map)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
-type Instruction = (State, Cuboid)
-type Cuboid = ((Int, Int), (Int, Int), (Int, Int))
+type Instruction = Cuboid
+type Cuboid = (CuboidType, ((Int, Int), (Int, Int), (Int, Int)))
 --            ((x1, x2), (y1, y2), (z1, z2))
+data CuboidType = Cuboid | AntiCuboid deriving (Eq, Show, Ord)
 data State = On | Off deriving (Eq, Show)
-type ReactorCore = Set (Int, Int, Int)
+type ReactorCore = Set Cuboid
+
 
 
 parseInput :: String -> [Instruction]
@@ -20,34 +22,62 @@ parseInstruction :: String -> Instruction
 parseInstruction line =
     let
         (rawState, rawCoords) = listTo2Tuple $ splitOn " " line
-        state = case rawState of
-            "on" -> On
-            "off" -> Off
+        cuboidType = case rawState of
+            "on" -> Cuboid
+            "off" -> AntiCuboid
         coords =
             listTo3Tuple . map listTo2Tuple . map (map read) . map (splitOn "..") . map (drop 2) . splitOn ","
                 $ rawCoords
     in
-    (state, coords)
+    (Cuboid, coords)
 
 applyInstructions :: [Instruction] -> ReactorCore -> ReactorCore
 applyInstructions [] core = core
 applyInstructions (instruction:rest) core =
     applyInstructions rest (applyInstruction instruction core)
 
-applyInstruction :: Instruction -> ReactorCore -> ReactorCore
-applyInstruction (state, cuboid) reactorCore =
-    let
-        cubes = toCubes cuboid
-    in
-    case state of
-        On ->
-            foldr Set.insert reactorCore cubes
-        Off ->
-            foldr Set.delete reactorCore cubes
+-- applyInstruction :: Instruction -> ReactorCore -> ReactorCore
+-- applyInstruction cuboid reactorCore =
+--     insertCuboid cuboid
+--     case cuboidType of
+--         Cuboid -> addCuboid cuboid reactorCore
+--         Off -> subtractCuboid cuboid reactorCore
 
-toCubes :: Cuboid -> [(Int, Int, Int)]
-toCubes ((x1, x2), (y1, y2), (z1, z2)) =
-    map listTo3Tuple $ concatMap (\x -> concatMap (\y -> map (\z -> [x,y,z]) [z1..z2]) [y1..y2]) [x1..x2]
+-- subtractCuboid :: Cuboid -> Set Cuboid -> Set Cuboid
+-- subtractCuboid (AntiCuboid, _) cuboids = cuboids
+-- subtractCuboid (Cuboid, cuboidCoords) cuboids =
+--     insertCuboid (AntiCuboid, cuboidCoords) cuboids
+
+-- addCuboid :: Cuboid -> Set Cuboid -> Set Cuboid
+-- addCuboid (AntiCuboid, _) cuboids = cuboids
+-- addCuboid (Cuboid, cuboidCoords) cuboids =
+--     insertCuboid (Cuboid, cuboidCoords) cuboids
+
+applyInstruction :: Cuboid -> Set Cuboid -> Set Cuboid
+applyInstruction cuboid@(cuboidType, cuboidCoords) cuboids =
+    let
+        withCuboid = Set.insert cuboid cuboids
+    in
+    withCuboid
+
+inverseCuboidType :: CuboidType -> CuboidType
+inverseCuboidType cuboidType =
+    case cuboidType of
+        Cuboid -> AntiCuboid
+        AntiCuboid -> Cuboid
+
+countCubes :: Cuboid -> Int
+countCubes (cuboidType, ((x1, x2), (y1, y2), (z1, z2))) =
+    sign * abs ((1 + x2 - x1) * (1 + y2 - y1) * (1 + z2 - z1))
+    where
+        sign =
+            case cuboidType of
+                Cuboid -> 1
+                AntiCuboid -> -1
+
+countTotalCubes :: ReactorCore -> Int
+countTotalCubes reactorCore =
+    sum . map countCubes . Set.elems $ reactorCore
 
 listTo2Tuple :: [a] -> (a, a)
 listTo2Tuple (a1:a2:_) = (a1, a2)
@@ -59,4 +89,4 @@ main :: IO ()
 main = do
     raw <- getContents
     let instructions = parseInput raw
-    print . Set.size $ applyInstructions instructions Set.empty
+    print . countTotalCubes $ applyInstructions instructions Set.empty
