@@ -9,7 +9,6 @@ type Instruction = Cuboid
 type Cuboid = (CuboidType, ((Int, Int), (Int, Int), (Int, Int)))
 --            ((x1, x2), (y1, y2), (z1, z2))
 data CuboidType = Cuboid | AntiCuboid deriving (Eq, Show, Ord)
-data State = On | Off deriving (Eq, Show)
 type ReactorCore = Set Cuboid
 
 
@@ -29,36 +28,55 @@ parseInstruction line =
             listTo3Tuple . map listTo2Tuple . map (map read) . map (splitOn "..") . map (drop 2) . splitOn ","
                 $ rawCoords
     in
-    (Cuboid, coords)
+    (cuboidType, coords)
 
 applyInstructions :: [Instruction] -> ReactorCore -> ReactorCore
 applyInstructions [] core = core
 applyInstructions (instruction:rest) core =
     applyInstructions rest (applyInstruction instruction core)
 
--- applyInstruction :: Instruction -> ReactorCore -> ReactorCore
--- applyInstruction cuboid reactorCore =
---     insertCuboid cuboid
---     case cuboidType of
---         Cuboid -> addCuboid cuboid reactorCore
---         Off -> subtractCuboid cuboid reactorCore
-
--- subtractCuboid :: Cuboid -> Set Cuboid -> Set Cuboid
--- subtractCuboid (AntiCuboid, _) cuboids = cuboids
--- subtractCuboid (Cuboid, cuboidCoords) cuboids =
---     insertCuboid (AntiCuboid, cuboidCoords) cuboids
-
--- addCuboid :: Cuboid -> Set Cuboid -> Set Cuboid
--- addCuboid (AntiCuboid, _) cuboids = cuboids
--- addCuboid (Cuboid, cuboidCoords) cuboids =
---     insertCuboid (Cuboid, cuboidCoords) cuboids
-
 applyInstruction :: Cuboid -> Set Cuboid -> Set Cuboid
-applyInstruction cuboid@(cuboidType, cuboidCoords) cuboids =
+applyInstruction cuboid cuboids =
     let
-        withCuboid = Set.insert cuboid cuboids
+        intersections = findIntersections cuboid cuboids
+        compensatingCuboids =
+            map
+                (\intersection@(intersectingType, intersectingCoords) ->
+                    (inverseCuboidType intersectingType, intersectingCoords)
+                )
+                intersections
     in
-    withCuboid
+    case fst cuboid of
+        Cuboid ->
+            insertSeveral (cuboid:compensatingCuboids) cuboids
+        AntiCuboid ->
+            insertSeveral compensatingCuboids cuboids
+            -- insertSeveral (map (\(t, c) -> (inverseCuboidType t, c)) compensatingCuboids) cuboids
+
+findIntersections :: Cuboid -> Set Cuboid -> [Cuboid]
+findIntersections (_, ((x1, x2), (y1, y2), (z1, z2))) cuboids =
+    Set.foldr checkIntersection [] cuboids
+    where
+        checkIntersection :: Cuboid -> [Cuboid] -> [Cuboid]
+        checkIntersection (cuboidType_, ((x1', x2'), (y1', y2'), (z1', z2'))) intersections =
+            if (x1' <= x2 && x2' >= x1)
+                && (y1' <= y2 && y2' >= y1)
+                && (z1' <= z2 && z2' >= z1) then
+                -- 1. should both types be the same? what about intersecting a cuboid with an anticuboid?
+                -- 2. maybe we should check for intersections at every intersecting cuboid we add?
+                ( cuboidType_
+                , ( (max x1' x1, min x2' x2)
+                  , (max y1' y1, min y2' y2)
+                  , (max z1' z1, min z2' z2)
+                  )
+                ) : intersections
+            else
+                intersections
+
+
+insertSeveral :: [Cuboid] -> Set Cuboid -> Set Cuboid
+insertSeveral [] cuboids = cuboids
+insertSeveral (cuboid:rest) cuboids = insertSeveral rest (Set.insert cuboid cuboids)
 
 inverseCuboidType :: CuboidType -> CuboidType
 inverseCuboidType cuboidType =
@@ -89,4 +107,6 @@ main :: IO ()
 main = do
     raw <- getContents
     let instructions = parseInput raw
-    print . countTotalCubes $ applyInstructions instructions Set.empty
+    let reactor = applyInstructions instructions Set.empty
+    print reactor
+    print $ countTotalCubes reactor
