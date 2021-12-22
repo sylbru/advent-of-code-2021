@@ -34,25 +34,10 @@ applyInstructions [] core = core
 applyInstructions (instruction:rest) core =
     applyInstructions rest (applyInstruction instruction core)
 
-toRelevantCuboid :: Cuboid -> Maybe Cuboid
-toRelevantCuboid ((x1, x2), (y1, y2), (z1, z2)) =
-    if (constrain x1) /= (constrain x2) && (constrain y1) /= (constrain y2) && (constrain z1) /= (constrain z2) then
-        Just ((constrain x1, constrain x2), (constrain y1, constrain y2), (constrain z1, constrain z2))
-    else
-        Nothing
-    where
-        constrain :: Int -> Int
-        constrain value =
-            if value < -50 then -50
-            else if value > 50 then 50
-            else value
-
 applyInstruction :: Instruction -> ReactorCore -> ReactorCore
 applyInstruction (state, cuboid) reactorCore =
     let
-        cubes = case toRelevantCuboid cuboid of
-            Just relevantCuboid -> toCubes relevantCuboid
-            Nothing -> []
+        cubes = toCubes cuboid
     in
     case state of
         On ->
