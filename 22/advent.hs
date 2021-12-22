@@ -1,7 +1,6 @@
 import Data.Char (isSpace)
 import Data.List
 import Data.List.Split (splitOn)
-import Data.Map.Strict (Map)
 
 type Instruction = Cuboid
 type Cuboid = (CuboidType, ((Int, Int), (Int, Int), (Int, Int)))
