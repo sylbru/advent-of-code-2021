@@ -2,16 +2,12 @@ import Data.Char (isSpace)
 import Data.List
 import Data.List.Split (splitOn)
 import Data.Map.Strict (Map)
-import Data.Set (Set)
-import qualified Data.Set as Set
 
 type Instruction = Cuboid
 type Cuboid = (CuboidType, ((Int, Int), (Int, Int), (Int, Int)))
---            ((x1, x2), (y1, y2), (z1, z2))
+           -- ((x1, x2), (y1, y2), (z1, z2))
 data CuboidType = Cuboid | AntiCuboid deriving (Eq, Show, Ord)
-type ReactorCore = Set Cuboid
-
-
+type ReactorCore = [Cuboid]
 
 parseInput :: String -> [Instruction]
 parseInput input =
@@ -35,7 +31,7 @@ applyInstructions [] core = core
 applyInstructions (instruction:rest) core =
     applyInstructions rest (applyInstruction instruction core)
 
-applyInstruction :: Cuboid -> Set Cuboid -> Set Cuboid
+applyInstruction :: Cuboid -> [Cuboid] -> [Cuboid]
 applyInstruction cuboid cuboids =
     let
         intersections = findIntersections cuboid cuboids
@@ -51,19 +47,16 @@ applyInstruction cuboid cuboids =
             insertSeveral (cuboid:compensatingCuboids) cuboids
         AntiCuboid ->
             insertSeveral compensatingCuboids cuboids
-            -- insertSeveral (map (\(t, c) -> (inverseCuboidType t, c)) compensatingCuboids) cuboids
 
-findIntersections :: Cuboid -> Set Cuboid -> [Cuboid]
+findIntersections :: Cuboid -> [Cuboid] -> [Cuboid]
 findIntersections (_, ((x1, x2), (y1, y2), (z1, z2))) cuboids =
-    Set.foldr checkIntersection [] cuboids
+    foldr checkIntersection [] cuboids
     where
         checkIntersection :: Cuboid -> [Cuboid] -> [Cuboid]
         checkIntersection (cuboidType_, ((x1', x2'), (y1', y2'), (z1', z2'))) intersections =
             if (x1' <= x2 && x2' >= x1)
                 && (y1' <= y2 && y2' >= y1)
                 && (z1' <= z2 && z2' >= z1) then
-                -- 1. should both types be the same? what about intersecting a cuboid with an anticuboid?
-                -- 2. maybe we should check for intersections at every intersecting cuboid we add?
                 ( cuboidType_
                 , ( (max x1' x1, min x2' x2)
                   , (max y1' y1, min y2' y2)
@@ -73,10 +66,9 @@ findIntersections (_, ((x1, x2), (y1, y2), (z1, z2))) cuboids =
             else
                 intersections
 
-
-insertSeveral :: [Cuboid] -> Set Cuboid -> Set Cuboid
+insertSeveral :: [Cuboid] -> [Cuboid] -> [Cuboid]
 insertSeveral [] cuboids = cuboids
-insertSeveral (cuboid:rest) cuboids = insertSeveral rest (Set.insert cuboid cuboids)
+insertSeveral (cuboid:rest) cuboids = insertSeveral rest (cuboid:cuboids)
 
 inverseCuboidType :: CuboidType -> CuboidType
 inverseCuboidType cuboidType =
@@ -95,7 +87,7 @@ countCubes (cuboidType, ((x1, x2), (y1, y2), (z1, z2))) =
 
 countTotalCubes :: ReactorCore -> Int
 countTotalCubes reactorCore =
-    sum . map countCubes . Set.elems $ reactorCore
+    sum . map countCubes $ reactorCore
 
 listTo2Tuple :: [a] -> (a, a)
 listTo2Tuple (a1:a2:_) = (a1, a2)
@@ -107,6 +99,5 @@ main :: IO ()
 main = do
     raw <- getContents
     let instructions = parseInput raw
-    let reactor = applyInstructions instructions Set.empty
-    print reactor
+    let reactor = applyInstructions instructions []
     print $ countTotalCubes reactor
