@@ -3,24 +3,29 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 
 data SeaCucumber = EastFacing | SouthFacing
-type SeaFloor = Map (Int, Int) SeaCucumber
+type SeaFloor = ((Int, Int), Map (Int, Int) SeaCucumber)
 
 parseInput :: String -> SeaFloor
 parseInput input =
-    Map.fromList . Maybe.mapMaybe (\(key, maybeValue) ->
-        case maybeValue of
-            Just value -> Just (key, value)
-            Nothing -> Nothing
-        ) . concat $
-    indexedMap
-        (\(y, row) ->
+    let rows = lines input
+        dimensions = (length $ head rows, length rows)
+        grid =
+            Map.fromList . Maybe.mapMaybe (\(key, maybeValue) ->
+                case maybeValue of
+                    Just value -> Just (key, value)
+                    Nothing -> Nothing
+                ) . concat $
             indexedMap
-                (\(x, cell) ->
-                    ((x,y), parseCell cell)
+                (\(y, row) ->
+                    indexedMap
+                        (\(x, cell) ->
+                            ((x,y), parseCell cell)
+                        )
+                        row
                 )
-                row
-        )
-        (lines input)
+                rows
+    in
+    (dimensions, grid)
 
 indexedMap :: ((Int, a) -> b) -> [a] -> [b]
 indexedMap f l =
@@ -40,16 +45,14 @@ parseCell char =
         _ -> Nothing
 
 seaFloorToString :: SeaFloor -> String
-seaFloorToString floor =
+seaFloorToString ((width, height), floor) =
     let
-        (minX, maxX) = Map.foldrWithKey (\(x,_) _ acc -> (min (fst acc) x, max (snd acc) x)) (0,0) floor
-        (minY, maxY) = Map.foldrWithKey (\(_,y) _ acc -> (min (fst acc) y, max (snd acc) y)) (0,0) floor
         floorAsList =
             map
                 (\y ->
-                    map (\x -> Map.lookup (x,y) floor) [minX..maxX]
+                    map (\x -> Map.lookup (x,y) floor) [0..width - 1]
                 )
-                [minY..maxY]
+                [0..height - 1]
     in
     unlines . map (map cellToString) $ floorAsList
 
