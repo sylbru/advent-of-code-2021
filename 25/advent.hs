@@ -3,39 +3,11 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 
 data SeaCucumber = EastFacing | SouthFacing
-type SeaFloor = ((Int, Int), Map (Int, Int) SeaCucumber)
+type SeaFloor = [[Maybe SeaCucumber]]
 
 parseInput :: String -> SeaFloor
 parseInput input =
-    let rows = lines input
-        dimensions = (length $ head rows, length rows)
-        grid =
-            Map.fromList . Maybe.mapMaybe (\(key, maybeValue) ->
-                case maybeValue of
-                    Just value -> Just (key, value)
-                    Nothing -> Nothing
-                ) . concat $
-            indexedMap
-                (\(y, row) ->
-                    indexedMap
-                        (\(x, cell) ->
-                            ((x,y), parseCell cell)
-                        )
-                        row
-                )
-                rows
-    in
-    (dimensions, grid)
-
-indexedMap :: ((Int, a) -> b) -> [a] -> [b]
-indexedMap f l =
-    go 0 f l
-    where
-        go :: Int -> ((Int, a) -> b) -> [a] -> [b]
-        go _ _ [] = []
-        go i fun (x:xs) =
-            fun (i,x) : go (i + 1) fun xs
-
+    map (map parseCell) . lines $ input
 
 parseCell :: Char -> Maybe SeaCucumber
 parseCell char =
@@ -45,16 +17,8 @@ parseCell char =
         _ -> Nothing
 
 seaFloorToString :: SeaFloor -> String
-seaFloorToString ((width, height), floor) =
-    let
-        floorAsList =
-            map
-                (\y ->
-                    map (\x -> Map.lookup (x,y) floor) [0..width - 1]
-                )
-                [0..height - 1]
-    in
-    unlines . map (map cellToString) $ floorAsList
+seaFloorToString floor =
+    unlines . map (map cellToString) $ floor
 
 cellToString :: Maybe SeaCucumber -> Char
 cellToString cell =
@@ -63,12 +27,40 @@ cellToString cell =
         Just EastFacing -> '>'
         Just SouthFacing -> 'v'
 
-step :: SeaFloor -> SeaFloor
-step floor =
+move :: SeaFloor -> SeaFloor
+move floor =
     moveSouthFacingHerd . moveEastFacingHerd $ floor
 
+end :: [a] -> a
+end = head . reverse
+
 moveEastFacingHerd :: SeaFloor -> SeaFloor
-moveEastFacingHerd = id
+moveEastFacingHerd floor =
+    -- map ((drop 1) . (\row@(f:_) -> moveRow [] f (end row : row))) floor
+    map (\row@(f:_) -> moveRow [] f row) floor
+    where
+        moveRow :: [Maybe SeaCucumber] -> Maybe SeaCucumber -> [Maybe SeaCucumber] -> [Maybe SeaCucumber]
+        moveRow acc first (Just EastFacing:Nothing:rest) =
+            moveRow (Just EastFacing:Nothing:acc) first rest
+        moveRow acc first (current:next:rest) =
+            moveRow (current:acc) first (next:rest)
+        moveRow acc first (last:[]) =
+            reverse (last:acc)
+        --     case
+        -- moveRow acc first (current:after:rest) =
+        --     case (before, current) of
+        --         (Just EastFacing, Nothing) ->
+        --             moveRow (Just EastFacing:acc) first
+        --         (_, Nothing)
+        --         (_, Nothing)
+        -- moveRow acc first (before:Just EastFacing:after:rest) =
+        -- moveRow acc first (before:Just EastFacing:after:rest) =
+        --     if Maybe.isNothing after then
+        --         moveRow (acc ++ ) first
+
+        --     moveRow first (after:rest)
+        -- moveRow acc first floor_@(_:after:rest) = floor_
+
 
 moveSouthFacingHerd :: SeaFloor -> SeaFloor
 moveSouthFacingHerd = id
@@ -76,4 +68,4 @@ moveSouthFacingHerd = id
 main :: IO ()
 main = do
     raw <- getContents
-    putStrLn . seaFloorToString . step . parseInput $ "...>>>>>..."
+    putStrLn . seaFloorToString . move . parseInput $ "...>>>..."
